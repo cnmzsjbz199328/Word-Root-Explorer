@@ -5,6 +5,10 @@ const OPENROUTER_API_KEY = (window as any).OPENROUTER_API_KEY || '';
 const SITE_URL = (window as any).SITE_URL || '';
 const SITE_NAME = (window as any).SITE_NAME || '';
 
+console.log('[env] OPENROUTER_API_KEY:', OPENROUTER_API_KEY ? '***' : 'MISSING');
+console.log('[env] SITE_URL:', SITE_URL);
+console.log('[env] SITE_NAME:', SITE_NAME);
+
 const colors = [
   'from-blue-500 to-blue-600', 'from-purple-500 to-purple-600',
   'from-green-500 to-green-600', 'from-orange-500 to-orange-600',
@@ -52,6 +56,8 @@ Example for "transport" (which has "port" as a root):
 }
 Do not include any commentary or markdown formatting like \`\`\`json outside the JSON object itself. Only return the JSON object.`;
 
+  console.log('[fetchWordRootData] Sending prompt:', prompt);
+
   const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -71,11 +77,17 @@ Do not include any commentary or markdown formatting like \`\`\`json outside the
     })
   });
 
+  console.log('[fetchWordRootData] Response status:', response.status);
+
   if (!response.ok) {
+    const text = await response.text();
+    console.error('[fetchWordRootData] Error response:', text);
     throw new Error("Failed to fetch word root data from OpenRouter API.");
   }
 
   const data = await response.json();
+  console.log('[fetchWordRootData] Raw API response:', data);
+
   let jsonStr = "";
   // Try to extract the JSON object from the model's response
   if (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
@@ -87,17 +99,23 @@ Do not include any commentary or markdown formatting like \`\`\`json outside the
       jsonStr = jsonStr.replace(/^```/, '').replace(/```$/, '').trim();
     }
   } else {
+    console.error('[fetchWordRootData] Unexpected response format:', data);
     throw new Error("Unexpected response format from OpenRouter API.");
   }
+
+  console.log('[fetchWordRootData] Extracted JSON string:', jsonStr);
 
   let geminiData;
   try {
     geminiData = JSON.parse(jsonStr);
+    console.log('[fetchWordRootData] Parsed JSON:', geminiData);
   } catch (e) {
+    console.error('[fetchWordRootData] JSON parse error:', e, jsonStr);
     throw new Error("Failed to parse JSON from OpenRouter API response.");
   }
 
   if (!geminiData.root || !geminiData.relatedWords || geminiData.relatedWords.length === 0) {
+    console.error('[fetchWordRootData] Missing root or relatedWords:', geminiData);
     throw new Error("Could not extract root information from the word. Try a different word.");
   }
 
@@ -126,9 +144,11 @@ Do not include any commentary or markdown formatting like \`\`\`json outside the
               }
             }
           }
+        } else {
+          console.warn(`[dictionaryapi] Error for ${rw.word}:`, dictResponse.status);
         }
       } catch (e) {
-        // ignore
+        console.warn(`[dictionaryapi] Fetch error for ${rw.word}:`, e);
       }
       return {
         ...rw,
@@ -138,6 +158,12 @@ Do not include any commentary or markdown formatting like \`\`\`json outside the
       };
     })
   );
+
+  console.log('[fetchWordRootData] Final result:', {
+    root: geminiData.root,
+    rootMeaning: geminiData.rootMeaning,
+    relatedWords: enrichedRelatedWords
+  });
 
   return {
     root: geminiData.root,
