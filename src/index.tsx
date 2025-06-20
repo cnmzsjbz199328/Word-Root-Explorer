@@ -18,7 +18,6 @@ export type WordRootData = {
   relatedWords: RelatedWord[];
 };
 
-// API response types
 export type ApiRelatedWordStructure = {
   prefixOrSuffix: string;
   word: string;
@@ -31,7 +30,6 @@ export type ApiData = {
   relatedWords: ApiRelatedWordStructure[];
 };
 
-// Color palette for word combinations
 const colors = [
   'from-blue-500 to-indigo-600',
   'from-purple-500 to-pink-600',
@@ -43,63 +41,55 @@ const colors = [
   'from-pink-500 to-rose-600'
 ];
 
-// Service function to fetch word root data
+// Service function to fetch word root data (mock, replace with real API)
 const fetchWordRootData = async (word: string): Promise<WordRootData> => {
-  try {
-    // This is a mock implementation - replace with your actual API call
-    // For demonstration, I'll create some sample data
-    const mockApiData: ApiData = {
-      root: 'vis',
-      rootMeaning: 'to see',
-      relatedWords: [
-        { prefixOrSuffix: 're', word: 'revise', type: 'prefix' },
-        { prefixOrSuffix: 'ion', word: 'vision', type: 'suffix' },
-        { prefixOrSuffix: 'ible', word: 'visible', type: 'suffix' }
-      ]
-    };
+  // Replace this mock with your actual API call
+  const mockApiData: ApiData = {
+    root: 'vis',
+    rootMeaning: 'to see',
+    relatedWords: [
+      { prefixOrSuffix: 're', word: 'revise', type: 'prefix' },
+      { prefixOrSuffix: 'ion', word: 'vision', type: 'suffix' },
+      { prefixOrSuffix: 'ible', word: 'visible', type: 'suffix' }
+    ]
+  };
 
-    // Enrich with dictionary data
-    const enrichedRelatedWords = await Promise.all(
-      mockApiData.relatedWords.map(async (rw, index) => {
-        let definition = 'Definition not found.';
-        let example = 'Example not found.';
-        
-        try {
-          const dictResponse = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${rw.word}`);
-          if (dictResponse.ok) {
-            const dictData = await dictResponse.json();
-            if (Array.isArray(dictData) && dictData.length > 0) {
-              const firstEntry = dictData[0];
-              if (firstEntry.meanings && firstEntry.meanings.length > 0) {
-                const firstMeaning = firstEntry.meanings[0];
-                if (firstMeaning.definitions && firstMeaning.definitions.length > 0) {
-                  definition = firstMeaning.definitions[0].definition;
-                  example = firstMeaning.definitions.find((d: any) => d.example)?.example || 'Example not available.';
-                }
+  const enrichedRelatedWords = await Promise.all(
+    mockApiData.relatedWords.map(async (rw, index) => {
+      let definition = 'Definition not found.';
+      let example = 'Example not found.';
+      try {
+        const dictResponse = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${rw.word}`);
+        if (dictResponse.ok) {
+          const dictData = await dictResponse.json();
+          if (Array.isArray(dictData) && dictData.length > 0) {
+            const firstEntry = dictData[0];
+            if (firstEntry.meanings && firstEntry.meanings.length > 0) {
+              const firstMeaning = firstEntry.meanings[0];
+              if (firstMeaning.definitions && firstMeaning.definitions.length > 0) {
+                definition = firstMeaning.definitions[0].definition;
+                example = firstMeaning.definitions.find((d: any) => d.example)?.example || 'Example not available.';
               }
             }
           }
-        } catch (e) {
-          console.warn(`Could not fetch dictionary data for ${rw.word}:`, e);
         }
-        
-        return {
-          ...rw,
-          definition,
-          example,
-          color: colors[index % colors.length]
-        };
-      })
-    );
+      } catch (e) {
+        console.warn(`Could not fetch dictionary data for ${rw.word}:`, e);
+      }
+      return {
+        ...rw,
+        definition,
+        example,
+        color: colors[index % colors.length]
+      };
+    })
+  );
 
-    return {
-      root: mockApiData.root,
-      rootMeaning: mockApiData.rootMeaning,
-      relatedWords: enrichedRelatedWords as RelatedWord[]
-    };
-  } catch (error) {
-    throw new Error('Failed to fetch word root data');
-  }
+  return {
+    root: mockApiData.root,
+    rootMeaning: mockApiData.rootMeaning,
+    relatedWords: enrichedRelatedWords as RelatedWord[]
+  };
 };
 
 const WordRootCard = ({ data }: { data: WordRootData | null }) => {
