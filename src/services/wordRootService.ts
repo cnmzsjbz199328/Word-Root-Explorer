@@ -17,7 +17,12 @@ const colors = [
 ];
 
 export async function fetchWordRootData(wordToQuery: string): Promise<WordRootData> {
+  console.log('[service] fetchWordRootData called with:', wordToQuery);
+  console.log('[service] Using API KEY:', OPENROUTER_API_KEY ? '***' : 'MISSING');
+  console.log('[service] SITE_URL:', SITE_URL);
+  console.log('[service] SITE_NAME:', SITE_NAME);
   if (!wordToQuery.trim()) {
+    console.warn('[service] Empty input');
     throw new Error("Please enter a word.");
   }
 
@@ -56,7 +61,7 @@ Example for "transport" (which has "port" as a root):
 }
 Do not include any commentary or markdown formatting like \`\`\`json outside the JSON object itself. Only return the JSON object.`;
 
-  console.log('[fetchWordRootData] Sending prompt:', prompt);
+  console.log('[service] Prompt to send:', prompt);
 
   const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
@@ -77,16 +82,16 @@ Do not include any commentary or markdown formatting like \`\`\`json outside the
     })
   });
 
-  console.log('[fetchWordRootData] Response status:', response.status);
+  console.log('[service] Response status:', response.status);
 
   if (!response.ok) {
     const text = await response.text();
-    console.error('[fetchWordRootData] Error response:', text);
+    console.error('[service] Error response:', text);
     throw new Error("Failed to fetch word root data from OpenRouter API.");
   }
 
   const data = await response.json();
-  console.log('[fetchWordRootData] Raw API response:', data);
+  console.log('[service] Raw API response:', data);
 
   let jsonStr = "";
   // Try to extract the JSON object from the model's response
@@ -99,23 +104,23 @@ Do not include any commentary or markdown formatting like \`\`\`json outside the
       jsonStr = jsonStr.replace(/^```/, '').replace(/```$/, '').trim();
     }
   } else {
-    console.error('[fetchWordRootData] Unexpected response format:', data);
+    console.error('[service] Unexpected response format:', data);
     throw new Error("Unexpected response format from OpenRouter API.");
   }
 
-  console.log('[fetchWordRootData] Extracted JSON string:', jsonStr);
+  console.log('[service] Extracted JSON string:', jsonStr);
 
   let geminiData;
   try {
     geminiData = JSON.parse(jsonStr);
-    console.log('[fetchWordRootData] Parsed JSON:', geminiData);
+    console.log('[service] Parsed JSON:', geminiData);
   } catch (e) {
-    console.error('[fetchWordRootData] JSON parse error:', e, jsonStr);
+    console.error('[service] JSON parse error:', e, jsonStr);
     throw new Error("Failed to parse JSON from OpenRouter API response.");
   }
 
   if (!geminiData.root || !geminiData.relatedWords || geminiData.relatedWords.length === 0) {
-    console.error('[fetchWordRootData] Missing root or relatedWords:', geminiData);
+    console.error('[service] Missing root or relatedWords:', geminiData);
     throw new Error("Could not extract root information from the word. Try a different word.");
   }
 
@@ -131,9 +136,11 @@ Do not include any commentary or markdown formatting like \`\`\`json outside the
       let definition = 'Definition not found.';
       let example = 'Example not found.';
       try {
+        console.log(`[service-dictAPI] Fetching for: ${rw.word}`);
         const dictResponse = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${rw.word}`);
         if (dictResponse.ok) {
           const dictData = await dictResponse.json();
+          console.log(`[service-dictAPI] Response for ${rw.word}:`, dictData);
           if (Array.isArray(dictData) && dictData.length > 0) {
             const firstEntry = dictData[0];
             if (firstEntry.meanings && firstEntry.meanings.length > 0) {
@@ -145,10 +152,10 @@ Do not include any commentary or markdown formatting like \`\`\`json outside the
             }
           }
         } else {
-          console.warn(`[dictionaryapi] Error for ${rw.word}:`, dictResponse.status);
+          console.warn(`[service-dictAPI] Error for ${rw.word}:`, dictResponse.status);
         }
       } catch (e) {
-        console.warn(`[dictionaryapi] Fetch error for ${rw.word}:`, e);
+        console.warn(`[service-dictAPI] Fetch error for ${rw.word}:`, e);
       }
       return {
         ...rw,
@@ -159,7 +166,7 @@ Do not include any commentary or markdown formatting like \`\`\`json outside the
     })
   );
 
-  console.log('[fetchWordRootData] Final result:', {
+  console.log('[service] Final result:', {
     root: geminiData.root,
     rootMeaning: geminiData.rootMeaning,
     relatedWords: enrichedRelatedWords

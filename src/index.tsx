@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BookOpen, Calendar, RotateCw, Sparkles, Search, Loader2, AlertTriangle } from 'lucide-react';
+import { fetchWordRootData } from './services/wordRootService';
 
 // Type definitions
 export type RelatedWord = {
@@ -42,55 +43,69 @@ const colors = [
 ];
 
 // Service function to fetch word root data (mock, replace with real API)
-const fetchWordRootData = async (word: string): Promise<WordRootData> => {
-  // Replace this mock with your actual API call
-  const mockApiData: ApiData = {
-    root: 'vis',
-    rootMeaning: 'to see',
-    relatedWords: [
-      { prefixOrSuffix: 're', word: 'revise', type: 'prefix' },
-      { prefixOrSuffix: 'ion', word: 'vision', type: 'suffix' },
-      { prefixOrSuffix: 'ible', word: 'visible', type: 'suffix' }
-    ]
-  };
+// const fetchWordRootData = async (word: string): Promise<WordRootData> => {
+//   console.log('[fetchWordRootData] called with:', word);
+//   // 检查 window.OPENROUTER_API_KEY
+//   console.log('[env] OPENROUTER_API_KEY:', (window as any).OPENROUTER_API_KEY);
+//   // 检查 window.SITE_URL
+//   console.log('[env] SITE_URL:', (window as any).SITE_URL);
+//   // 检查 window.SITE_NAME
+//   console.log('[env] SITE_NAME:', (window as any).SITE_NAME);
 
-  const enrichedRelatedWords = await Promise.all(
-    mockApiData.relatedWords.map(async (rw, index) => {
-      let definition = 'Definition not found.';
-      let example = 'Example not found.';
-      try {
-        const dictResponse = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${rw.word}`);
-        if (dictResponse.ok) {
-          const dictData = await dictResponse.json();
-          if (Array.isArray(dictData) && dictData.length > 0) {
-            const firstEntry = dictData[0];
-            if (firstEntry.meanings && firstEntry.meanings.length > 0) {
-              const firstMeaning = firstEntry.meanings[0];
-              if (firstMeaning.definitions && firstMeaning.definitions.length > 0) {
-                definition = firstMeaning.definitions[0].definition;
-                example = firstMeaning.definitions.find((d: any) => d.example)?.example || 'Example not available.';
-              }
-            }
-          }
-        }
-      } catch (e) {
-        console.warn(`Could not fetch dictionary data for ${rw.word}:`, e);
-      }
-      return {
-        ...rw,
-        definition,
-        example,
-        color: colors[index % colors.length]
-      };
-    })
-  );
+//   // MOCK: 你可以在这里切换为真实API调用
+//   // TODO: 替换为真实API调用逻辑
+//   const root = word.trim().toLowerCase() || 'demo';
+//   const rootMeaning = `Meaning of "${root}" (mock)`;
+//   const relatedWords = [
+//     { prefixOrSuffix: 're', word: `re${root}`, type: 'prefix' },
+//     { prefixOrSuffix: 'ion', word: `${root}ion`, type: 'suffix' },
+//     { prefixOrSuffix: 'able', word: `${root}able`, type: 'suffix' }
+//   ];
+//   console.log('[fetchWordRootData] relatedWords:', relatedWords);
 
-  return {
-    root: mockApiData.root,
-    rootMeaning: mockApiData.rootMeaning,
-    relatedWords: enrichedRelatedWords as RelatedWord[]
-  };
-};
+//   const enrichedRelatedWords = await Promise.all(
+//     relatedWords.map(async (rw, index) => {
+//       let definition = 'Definition not found.';
+//       let example = 'Example not found.';
+//       try {
+//         console.log(`[dictAPI] Fetching for: ${rw.word}`);
+//         const dictResponse = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${rw.word}`);
+//         if (dictResponse.ok) {
+//           const dictData = await dictResponse.json();
+//           console.log(`[dictAPI] Response for ${rw.word}:`, dictData);
+//           if (Array.isArray(dictData) && dictData.length > 0) {
+//             const firstEntry = dictData[0];
+//             if (firstEntry.meanings && firstEntry.meanings.length > 0) {
+//               const firstMeaning = firstEntry.meanings[0];
+//               if (firstMeaning.definitions && firstMeaning.definitions.length > 0) {
+//                 definition = firstMeaning.definitions[0].definition;
+//                 example = firstMeaning.definitions.find((d: any) => d.example)?.example || 'Example not available.';
+//               }
+//             }
+//           }
+//         } else {
+//           console.warn(`[dictAPI] Error for ${rw.word}:`, dictResponse.status);
+//         }
+//       } catch (e) {
+//         console.warn(`[dictAPI] Fetch error for ${rw.word}:`, e);
+//       }
+//       return {
+//         ...rw,
+//         definition,
+//         example,
+//         color: colors[index % colors.length]
+//       };
+//     })
+//   );
+
+//   const result = {
+//     root,
+//     rootMeaning,
+//     relatedWords: enrichedRelatedWords as RelatedWord[]
+//   };
+//   console.log('[fetchWordRootData] result:', result);
+//   return result;
+// };
 
 const WordRootCard = ({ data }: { data: WordRootData | null }) => {
   const [currentAffixIndex, setCurrentAffixIndex] = useState(0);
@@ -249,14 +264,18 @@ const App = () => {
     setLoading(true);
     setError(null);
     setWordData(null);
+    console.log('[App] handleSubmit, userInput:', userInput);
     try {
       const data = await fetchWordRootData(userInput);
       setWordData(data);
+      console.log('[App] setWordData:', data);
     } catch (e: any) {
       setError(e.message || "Failed to process word. Please try again or a different word.");
       setWordData(null);
+      console.error('[App] fetch error:', e);
     } finally {
       setLoading(false);
+      console.log('[App] loading finished');
     }
   };
 

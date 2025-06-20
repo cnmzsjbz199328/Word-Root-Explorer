@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BookOpen, Calendar, RotateCw, Sparkles, Search, Loader2, AlertTriangle } from 'lucide-react';
-import { fetchWordRootData } from './services/wordRootService';
+import { fetchWordRootData } from './src/services/wordRootService';
 
 // 类型定义导出供 service 层使用
 export type RelatedWord = {
@@ -201,137 +201,6 @@ const App = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-100 via-blue-50 to-indigo-100 p-4 sm:p-6">
-      <div className="text-center mb-8 sm:mb-12">
-        <div className="flex items-center justify-center gap-2 mb-4">
-          <Calendar className="text-blue-600" size={32} />
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Word Root Explorer</h1>
-        </div>
-        <p className="text-gray-600">Enter a word to discover its root and related vocabulary.</p>
-      </div>
-
-      <form onSubmit={handleSubmit} className="max-w-xl mx-auto mb-8 sm:mb-12 flex gap-2">
-        <input
-          type="text"
-          value={userInput}
-          onChange={(e) => setUserInput(e.target.value)}
-          placeholder="e.g., transport, vision, reject"
-          className="flex-grow p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-shadow"
-          aria-label="Enter a word"
-        />
-        <button
-          type="submit"
-          disabled={loading}
-          className="px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition-colors disabled:opacity-50 flex items-center justify-center"
-        >
-          {loading ? <Loader2 className="animate-spin mr-2" size={20} /> : <Search size={20} className="mr-0 sm:mr-2" />}
-          <span className="hidden sm:inline">Explore</span>
-        </button>
-      </form>
-
-      {error && (
-        <div className="max-w-4xl mx-auto mb-8 p-4 bg-red-100 border-l-4 border-red-500 text-red-700 rounded-md shadow-md flex items-center">
-          <AlertTriangle size={24} className="mr-3 text-red-500 flex-shrink-0" />
-          <p>{error}</p>
-        </div>
-      )}
-
-      {loading && !error && (
-        <div className="text-center py-10">
-          <Loader2 className="animate-spin text-blue-600 mx-auto" size={48} />
-          <p className="text-gray-600 mt-4 text-lg">Exploring word roots... this may take a moment.</p>
-        </div>
-      )}
-
-      {!loading && wordData && <WordRootCard data={wordData} />}
-      {!loading && !wordData && !error && (
-        <div className="max-w-4xl mx-auto text-center py-10 text-gray-500 opacity-75">
-          <BookOpen size={48} className="mx-auto mb-4" />
-          <p className="text-lg">Welcome to the Word Root Explorer!</p>
-          <p>Enter a word in the search bar above to begin your journey into etymology.</p>
-          <p className="text-sm mt-2">Discover how words are built and interconnected.</p>
-        </div>
-      )}
-    </div>
-  );
-};
-
-const container = document.getElementById('root');
-if (container) {
-  const root = createRoot(container);
-  root.render(<App />);
-}
-        </div>
-      )}
-    </div>
-  );
-};
-
-const container = document.getElementById('root');
-if (container) {
-  const root = createRoot(container);
-  root.render(<App />);
-}
-        geminiData.relatedWords.map(async (rw, index) => {
-          let definition = 'Definition not found.';
-          let example = 'Example not found.';
-          try {
-            const dictResponse = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${rw.word}`);
-            if (dictResponse.ok) {
-              const dictData = await dictResponse.json();
-              if (Array.isArray(dictData) && dictData.length > 0) {
-                const firstEntry = dictData[0];
-                if (firstEntry.meanings && firstEntry.meanings.length > 0) {
-                  const firstMeaning = firstEntry.meanings[0];
-                  if (firstMeaning.definitions && firstMeaning.definitions.length > 0) {
-                    definition = firstMeaning.definitions[0].definition;
-                    // Try to find an example in any definition for the first meaning
-                    example = firstMeaning.definitions.find((d: any) => d.example)?.example || 'Example not available.';
-                  }
-                }
-              }
-            } else {
-                 console.warn(`Dictionary API returned error for ${rw.word}: ${dictResponse.status}`);
-            }
-          } catch (e) {
-            console.warn(`Could not fetch dictionary data for ${rw.word}:`, e);
-          }
-          return {
-            ...rw, // This now includes prefixOrSuffix, word, and type from Gemini
-            definition,
-            example,
-            color: colors[index % colors.length]
-          };
-        })
-      );
-
-      setWordData({ 
-        root: geminiData.root, 
-        rootMeaning: geminiData.rootMeaning, 
-        relatedWords: enrichedRelatedWords as RelatedWord[] // Cast is safe as enrichedRelatedWords adds missing fields to GeminiRelatedWordStructure
-      });
-
-    } catch (e: any) {
-      console.error("Error fetching data:", e);
-      let message = "Failed to process word. Please try again or a different word.";
-      if (e.message && e.message.includes("JSON.parse")) {
-        message = "Received an unexpected response format from the AI. Please ensure the word is valid or try a different one.";
-      } else if (e.message) {
-        message = e.message;
-      }
-      setError(message);
-      setWordData(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    fetchWordRootData(userInput);
   };
 
   return (
