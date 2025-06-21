@@ -27,7 +27,7 @@ jobs:
 
       - name: Inject environment variables for frontend
         run: |
-          echo "window.OPENROUTER_API_KEY='${{ secrets.OPENROUTER_API_KEY }}';window.SITE_URL='${{ secrets.SITE_URL || 'https://<your-pages-domain>' }}';window.SITE_NAME='Word Root Explorer';" > ./dist/local.env.js
+          echo "window.SITE_URL='${{ secrets.SITE_URL || 'https://<your-pages-domain>' }}';window.SITE_NAME='Word Root Explorer';" > ./dist/local.env.js
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
