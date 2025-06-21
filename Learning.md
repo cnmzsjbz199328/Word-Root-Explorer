@@ -72,11 +72,12 @@
   npm install --save-dev @vitejs/plugin-react
   ```
 
-## 4. 其它建议
-- `vite.config.ts`、`package.json`、`index.html`、`src/` 目录等必须上传。
-- `node_modules`、`dist`、`local.env.js` 等自动生成文件应加入 `.gitignore`。
-- 本地开发用 `npm run dev`，生产构建用 `npm run build`。
-- 环境变量通过 workflow 注入 `local.env.js`，不要硬编码在源码中。
+### 3.8 样式维护不便
+- **问题**：所有样式都写在 JSX 的 className 里，导致后期维护和批量修改不便。
+- **解决**：
+  - 对于通用布局、配色等可继续用 Tailwind 原子类。
+  - 对于动画、响应式、主题等复杂样式，建议剥离到 `src/index.css` 或 `src/App.css`，用自定义 className 管理。
+  - 这样结构和样式分离，维护更灵活。
 
 ---
 
